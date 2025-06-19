@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnackerTracker</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+    }
+    .tabs {
+      display: flex;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    .tab {
+      flex: 1;
+      padding: 0.5rem;
+      margin: 0.25rem;
+      background: #ddd;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .tab.active {
+      background: #4caf50;
+      color: white;
+    }
+    .snack-list {
+      display: none;
+    }
+    .snack-list.active {
+      display: block;
+    }
+    .snack {
+      background: white;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .snack-controls button {
+      margin: 0 0.25rem;
+    }
+    .add-snack {
+      margin-top: 1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>SnackerTracker</h1>
+  <div class="tabs" id="tabs"></div>
+  <div id="lists"></div>
+  <div class="add-snack">
+    <button onclick="addNewSnack()">➕ Add New Snack</button>
+  </div>
+
+  <script>
+    const categories = ['Chips', 'Fruit', 'Drinks'];
+    const snacks = {
+      Chips: [{ name: 'Lays', count: 3 }, { name: 'Doritos', count: 2 }],
+      Fruit: [{ name: 'Apples', count: 5 }, { name: 'Bananas', count: 4 }],
+      Drinks: [{ name: 'Juice Boxes', count: 6 }]
+    };
+
+    function saveToStorage() {
+      localStorage.setItem('snackerData', JSON.stringify(snacks));
+    }
+
+    function loadFromStorage() {
+      const saved = JSON.parse(localStorage.getItem('snackerData'));
+      if (saved) {
+        for (const cat in saved) {
+          snacks[cat] = saved[cat];
+        }
+      }
+    }
+
+    function renderTabs() {
+      const tabContainer = document.getElementById('tabs');
+      tabContainer.innerHTML = '';
+      categories.forEach((cat, idx) => {
+        const tab = document.createElement('div');
+        tab.className = 'tab';
+        tab.textContent = cat;
+        if (idx === 0) tab.classList.add('active');
+        tab.onclick = () => switchTab(cat);
+        tabContainer.appendChild(tab);
+      });
+    }
+
+    function renderSnackList(category) {
+      const listsContainer = document.getElementById('lists');
+      listsContainer.innerHTML = '';
+
+      categories.forEach(cat => {
+        const list = document.createElement('div');
+        list.className = 'snack-list';
+        if (cat === category) list.classList.add('active');
+
+        snacks[cat].forEach((snack, index) => {
+          const item = document.createElement('div');
+          item.className = 'snack';
+
+          const label = document.createElement('span');
+          label.textContent = `${snack.name}: ${snack.count}`;
+
+          const controls = document.createElement('div');
+          controls.className = 'snack-controls';
+
+          const minus = document.createElement('button');
+          minus.textContent = '-';
+          minus.onclick = () => {
+            if (snack.count > 0) snack.count--;
+            saveToStorage();
+            renderSnackList(category);
+          };
+
+          const plus = document.createElement('button');
+          plus.textContent = '+';
+          plus.onclick = () => {
+            snack.count++;
+            saveToStorage();
+            renderSnackList(category);
+          };
+
+          const edit = document.createElement('button');
+          edit.textContent = '✎';
+          edit.onclick = () => {
+            const newVal = prompt('Enter new count for ' + snack.name, snack.count);
+            const valNum = parseInt(newVal);
+            if (!isNaN(valNum)) {
+              snack.count = valNum;
+              saveToStorage();
+              renderSnackList(category);
+            }
+          };
+
+          const del = document.createElement('button');
+          del.textContent = '🗑️';
+          del.onclick = () => {
+            if (confirm('Delete ' + snack.name + '?')) {
+              snacks[category].splice(index, 1);
+              saveToStorage();
+              renderSnackList(category);
+            }
+          };
+
+          controls.appendChild(minus);
+          controls.appendChild(plus);
+          controls.appendChild(edit);
+          controls.appendChild(del);
+
+          item.appendChild(label);
+          item.appendChild(controls);
+
+          list.appendChild(item);
+        });
+
+        listsContainer.appendChild(list);
+      });
+    }
+
+    function switchTab(category) {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.textContent === category) tab.classList.add('active');
+      });
+      renderSnackList(category);
+    }
+
+    function addNewSnack() {
+      const activeCategory = document.querySelector('.tab.active').textContent;
+      const name = prompt('Enter snack name:');
+      if (!name) return;
+      const count = parseInt(prompt('Enter starting count:', '0'));
+      if (isNaN(count)) return;
+      snacks[activeCategory].push({ name, count });
+      saveToStorage();
+      renderSnackList(activeCategory);
+    }
+
+    loadFromStorage();
+    renderTabs();
+    renderSnackList(categories[0]);
+  </script>
+</body>
+</html>
