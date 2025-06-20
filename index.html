@@ -145,10 +145,48 @@ let selectedCategory = categories[0];
     function renderTabs() {
       const tabContainer = document.getElementById('tabs');
       tabContainer.innerHTML = '';
-      categories.forEach((cat) => {
+
+      // Enable tab drag-and-drop
+      tabContainer.ondragover = (e) => e.preventDefault();
+      tabContainer.ondrop = (e) => {
+        e.preventDefault();
+        const fromIndex = e.dataTransfer.getData('text/plain');
+        const toTab = e.target.closest('.tab');
+        const toIndex = [...tabContainer.children].indexOf(toTab);
+        if (fromIndex >= 0 && toIndex >= 0 && fromIndex !== toIndex) {
+          const moved = categories.splice(fromIndex, 1)[0];
+          categories.splice(toIndex, 0, moved);
+          saveToStorage();
+          renderTabs();
+      // Add new tab button
+      const plusTab = document.createElement('div');
+      plusTab.className = 'tab';
+      plusTab.textContent = '+';
+      plusTab.style.flex = '0 0 auto';
+      plusTab.onclick = () => {
+        const newName = prompt('Enter new tab name:');
+        if (newName && !categories.includes(newName)) {
+          categories.push(newName);
+          snacks[newName] = [];
+          saveToStorage();
+          selectedCategory = newName;
+          renderTabs();
+          renderSnackList(newName);
+        }
+      };
+      document.getElementById('tabs').appendChild(plusTab);
+        }
+      };
+
+      categories.forEach((cat, i) => {
         const tab = document.createElement('div');
         tab.className = 'tab';
         tab.textContent = cat;
+        tab.setAttribute('draggable', true);
+        tab.ondragstart = (e) => {
+          e.dataTransfer.setData('text/plain', i);
+          e.dataTransfer.effectAllowed = 'move';
+        };
         if (cat === selectedCategory) tab.classList.add('active');
         if (tabColors[cat]) {
           tab.style.background = tabColors[cat];
@@ -162,7 +200,7 @@ let selectedCategory = categories[0];
           showContextMenu(e, cat, tab);
         };
 
-        tabContainer.appendChild(tab);
+        tabContainer.appendChild(tab); // Append tab to container
       });
     }
 
@@ -219,6 +257,43 @@ let selectedCategory = categories[0];
         menu.style.display = 'none';
       };
       menu.appendChild(removeFillBtn);
+
+      const addTabBtn = document.createElement('button');
+      addTabBtn.textContent = 'Add New Tab';
+      addTabBtn.onclick = () => {
+        const newName = prompt('Enter new tab name:');
+        if (newName && !categories.includes(newName)) {
+          categories.push(newName);
+          snacks[newName] = [];
+          saveToStorage();
+          selectedCategory = newName;
+          renderTabs();
+          renderSnackList(newName);
+        }
+        menu.style.display = 'none';
+      };
+      menu.appendChild(addTabBtn);
+
+      const deleteTabBtn = document.createElement('button');
+      deleteTabBtn.textContent = 'Delete Tab';
+      deleteTabBtn.onclick = () => {
+        if (confirm(`Delete tab "${category}" and all its snacks?`)) {
+          const index = categories.indexOf(category);
+          if (index > -1) {
+            categories.splice(index, 1);
+            delete snacks[category];
+            delete tabColors[category];
+            if (selectedCategory === category) {
+              selectedCategory = categories[0] || '';
+            }
+            saveToStorage();
+            renderTabs();
+            renderSnackList(selectedCategory);
+          }
+        }
+        menu.style.display = 'none';
+      };
+      menu.appendChild(deleteTabBtn);
 
       document.addEventListener('click', () => {
         menu.style.display = 'none';
@@ -368,6 +443,32 @@ let selectedCategory = categories[0];
             menu.appendChild(colorPicker);
             menu.appendChild(removeFillBtn);
             menu.appendChild(adjustBtn);
+
+            const addSnackBtn = document.createElement('button');
+            addSnackBtn.textContent = 'Add Snack';
+            addSnackBtn.onclick = () => {
+              const name = prompt('Enter snack name:');
+              if (!name) return;
+              const count = parseInt(prompt('Enter starting count:', '0'));
+              if (isNaN(count)) return;
+              snacks[category].push({ name, count });
+              saveToStorage();
+              renderSnackList(category);
+              menu.style.display = 'none';
+            };
+            menu.appendChild(addSnackBtn);
+
+            const deleteSnackBtn = document.createElement('button');
+            deleteSnackBtn.textContent = 'Delete Snack';
+            deleteSnackBtn.onclick = () => {
+              if (confirm(`Delete snack "${snack.name}"?`)) {
+                snacks[category].splice(index, 1);
+                saveToStorage();
+                renderSnackList(category);
+              }
+              menu.style.display = 'none';
+            };
+            menu.appendChild(deleteSnackBtn);
 
             document.addEventListener('click', () => {
               menu.style.display = 'none';
