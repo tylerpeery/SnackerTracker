@@ -27,10 +27,47 @@
       border-radius: 8px;
       text-align: center;
       cursor: pointer;
+      user-select: none;
+      position: relative;
     }
     .tab.active {
       background: #4caf50;
       color: white;
+    }
+    .context-menu {
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      padding: 0.25rem;
+    }
+    .context-menu button {
+      background: none;
+      border: none;
+      padding: 0.5rem 1rem;
+      text-align: left;
+      cursor: pointer;
+      width: 100%;
+    }
+    .context-menu button:hover {
+      background: #eee;
+    }
+    .color-options {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem;
+    }
+    .color-swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      margin: 0 4px;
+      border: 1px solid #ccc;
     }
     .snack-list {
       display: none;
@@ -46,6 +83,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      cursor: grab;
+    }
+    .grabber {
+      margin-right: 0.5rem;
+      cursor: grab;
     }
     .snack-controls button {
       margin: 0 0.25rem;
@@ -57,15 +99,20 @@
   </style>
 </head>
 <body>
-  <h1>SnackerTracker</h1>
+  <h1>SnackerTracker!</h1>
   <div class="tabs" id="tabs"></div>
   <div id="lists"></div>
   <div class="add-snack">
     <button onclick="addNewSnack()">➕ Add New Snack</button>
   </div>
 
+  <div id="contextMenu" class="context-menu"></div>
+
   <script>
-    const categories = ['Chips', 'Fruit', 'Drinks'];
+    let categories = ['Chips', 'Fruit', 'Drinks'];
+let selectedCategory = categories[0];
+    const tabColors = {};
+
     const snacks = {
       Chips: [{ name: 'Lays', count: 3 }, { name: 'Doritos', count: 2 }],
       Fruit: [{ name: 'Apples', count: 5 }, { name: 'Bananas', count: 4 }],
@@ -74,49 +121,150 @@
 
     function saveToStorage() {
       localStorage.setItem('snackerData', JSON.stringify(snacks));
+      localStorage.setItem('categories', JSON.stringify(categories));
+      localStorage.setItem('tabColors', JSON.stringify(tabColors));
     }
 
     function loadFromStorage() {
       const saved = JSON.parse(localStorage.getItem('snackerData'));
+      const savedCats = JSON.parse(localStorage.getItem('categories'));
+      const savedColors = JSON.parse(localStorage.getItem('tabColors'));
       if (saved) {
         for (const cat in saved) {
           snacks[cat] = saved[cat];
         }
+      }
+      if (savedCats) {
+        categories = savedCats;
+      }
+      if (savedColors) {
+        Object.assign(tabColors, savedColors);
       }
     }
 
     function renderTabs() {
       const tabContainer = document.getElementById('tabs');
       tabContainer.innerHTML = '';
-      categories.forEach((cat, idx) => {
+      categories.forEach((cat) => {
         const tab = document.createElement('div');
         tab.className = 'tab';
         tab.textContent = cat;
-        if (idx === 0) tab.classList.add('active');
+        if (cat === selectedCategory) tab.classList.add('active');
+        if (tabColors[cat]) {
+          tab.style.background = tabColors[cat];
+          tab.style.color = 'white';
+        }
+
         tab.onclick = () => switchTab(cat);
+
+        tab.oncontextmenu = (e) => {
+          e.preventDefault();
+          showContextMenu(e, cat, tab);
+        };
+
         tabContainer.appendChild(tab);
       });
     }
 
+    function showContextMenu(event, category, tabElement) {
+      const menu = document.getElementById('contextMenu');
+      menu.innerHTML = '';
+      menu.style.top = `${event.pageY}px`;
+      menu.style.left = `${event.pageX}px`;
+      menu.style.display = 'flex';
+
+      const renameBtn = document.createElement('button');
+      renameBtn.textContent = 'Rename';
+      renameBtn.onclick = () => {
+        const newName = prompt('Rename category:', category);
+        if (newName && newName !== category && !categories.includes(newName)) {
+          const index = categories.indexOf(category);
+          categories[index] = newName;
+          snacks[newName] = snacks[category];
+          delete snacks[category];
+          tabColors[newName] = tabColors[category];
+          delete tabColors[category];
+          saveToStorage();
+          renderTabs();
+          renderSnackList(newName);
+        }
+        menu.style.display = 'none';
+      };
+
+      const colorPicker = document.createElement('div');
+      colorPicker.className = 'color-options';
+      const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
+      colors.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch';
+        swatch.style.backgroundColor = color;
+        swatch.onclick = () => {
+          tabColors[category] = color;
+          saveToStorage();
+          renderTabs();
+          menu.style.display = 'none';
+        };
+        colorPicker.appendChild(swatch);
+      });
+
+      menu.appendChild(renameBtn);
+      menu.appendChild(colorPicker);
+
+      const removeFillBtn = document.createElement('button');
+      removeFillBtn.textContent = 'Remove Fill';
+      removeFillBtn.onclick = () => {
+        delete tabColors[category];
+        saveToStorage();
+        renderTabs();
+        menu.style.display = 'none';
+      };
+      menu.appendChild(removeFillBtn);
+
+      document.addEventListener('click', () => {
+        menu.style.display = 'none';
+      }, { once: true });
+    }
+
+    const snackColors = {};
+
     function renderSnackList(category) {
       const listsContainer = document.getElementById('lists');
       listsContainer.innerHTML = '';
-
       categories.forEach(cat => {
         const list = document.createElement('div');
         list.className = 'snack-list';
+        list.setAttribute('data-category', cat);
         if (cat === category) list.classList.add('active');
-
         snacks[cat].forEach((snack, index) => {
           const item = document.createElement('div');
           item.className = 'snack';
-
+          item.setAttribute('draggable', true);
+          item.setAttribute('data-index', index);
+          item.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('text/plain', index);
+            e.dataTransfer.effectAllowed = 'move';
+          });
+          item.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+          });
+          item.addEventListener('drop', e => {
+            e.preventDefault();
+            const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            const droppedIndex = parseInt(item.getAttribute('data-index'));
+            const temp = snacks[category][draggedIndex];
+            snacks[category].splice(draggedIndex, 1);
+            snacks[category].splice(droppedIndex, 0, temp);
+            saveToStorage();
+            renderSnackList(category);
+          });
+          const grabber = document.createElement('span');
+          grabber.className = 'grabber';
+          grabber.textContent = '☰';
           const label = document.createElement('span');
           label.textContent = `${snack.name}: ${snack.count}`;
-
           const controls = document.createElement('div');
           controls.className = 'snack-controls';
-
           const minus = document.createElement('button');
           minus.textContent = '-';
           minus.onclick = () => {
@@ -124,7 +272,6 @@
             saveToStorage();
             renderSnackList(category);
           };
-
           const plus = document.createElement('button');
           plus.textContent = '+';
           plus.onclick = () => {
@@ -132,7 +279,6 @@
             saveToStorage();
             renderSnackList(category);
           };
-
           const edit = document.createElement('button');
           edit.textContent = '✎';
           edit.onclick = () => {
@@ -144,7 +290,6 @@
               renderSnackList(category);
             }
           };
-
           const del = document.createElement('button');
           del.textContent = '🗑️';
           del.onclick = () => {
@@ -154,23 +299,91 @@
               renderSnackList(category);
             }
           };
-
           controls.appendChild(minus);
           controls.appendChild(plus);
           controls.appendChild(edit);
           controls.appendChild(del);
-
+          item.appendChild(grabber);
           item.appendChild(label);
           item.appendChild(controls);
+          item.oncontextmenu = (e) => {
+            e.preventDefault();
+            const menu = document.getElementById('contextMenu');
+            menu.innerHTML = '';
+            menu.style.top = `${e.pageY}px`;
+            menu.style.left = `${e.pageX}px`;
+            menu.style.display = 'flex';
+
+            const renameBtn = document.createElement('button');
+            renameBtn.textContent = 'Rename';
+            renameBtn.onclick = () => {
+              const newName = prompt('Rename snack:', snack.name);
+              if (newName) {
+                snack.name = newName;
+                saveToStorage();
+                renderSnackList(category);
+              }
+              menu.style.display = 'none';
+            };
+
+            const colorPicker = document.createElement('div');
+            colorPicker.className = 'color-options';
+            const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
+            colors.forEach(color => {
+              const swatch = document.createElement('div');
+              swatch.className = 'color-swatch';
+              swatch.style.backgroundColor = color;
+              swatch.onclick = () => {
+                snack.color = color;
+                saveToStorage();
+                renderSnackList(category);
+                menu.style.display = 'none';
+              };
+              colorPicker.appendChild(swatch);
+            });
+
+            const removeFillBtn = document.createElement('button');
+            removeFillBtn.textContent = 'Remove Fill';
+            removeFillBtn.onclick = () => {
+              delete snack.color;
+              saveToStorage();
+              renderSnackList(category);
+              menu.style.display = 'none';
+            };
+
+            const adjustBtn = document.createElement('button');
+            adjustBtn.textContent = 'Adjust Amount';
+            adjustBtn.onclick = () => {
+              const newVal = prompt('Enter new count for ' + snack.name, snack.count);
+              const valNum = parseInt(newVal);
+              if (!isNaN(valNum)) {
+                snack.count = valNum;
+                saveToStorage();
+                renderSnackList(category);
+              }
+              menu.style.display = 'none';
+            };
+
+            menu.appendChild(renameBtn);
+            menu.appendChild(colorPicker);
+            menu.appendChild(removeFillBtn);
+            menu.appendChild(adjustBtn);
+
+            document.addEventListener('click', () => {
+              menu.style.display = 'none';
+            }, { once: true });
+          };
+
+          if (snack.color) item.style.background = snack.color;
 
           list.appendChild(item);
         });
-
         listsContainer.appendChild(list);
       });
     }
 
     function switchTab(category) {
+      selectedCategory = category;
       document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.remove('active');
         if (tab.textContent === category) tab.classList.add('active');
@@ -191,7 +404,7 @@
 
     loadFromStorage();
     renderTabs();
-    renderSnackList(categories[0]);
+    renderSnackList(selectedCategory);
   </script>
 </body>
 </html>
