@@ -28,6 +28,22 @@
 
 * **Add Tab**:  When adding a tab, the add tab button disappears.  It will currently reappear after dragging a tab.
 
+## Test Functionality
+
+* Click and drag tabs
+* Right click tabs
+* Change tab color
+* Rename tab
+* Add tab
+* Click and drag snacks
+* Right click snacks
+* Increase snack amount
+* Decrease snack amount
+* Edit snack amount
+* Change snack color
+* Add snack
+* Rename snack
+
 ## License
 
 MIT License (or add your preferred license here)
