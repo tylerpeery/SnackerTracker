@@ -195,20 +195,10 @@ let selectedCategory = categories[0];
 
         tab.onclick = () => switchTab(cat);
 
-        let longPressTimeout;
-tab.addEventListener('touchstart', (e) => {
-  longPressTimeout = setTimeout(() => {
-    e.preventDefault();
-    showContextMenu(e.touches[0], cat, tab);
-  }, 600);
-});
-tab.addEventListener('touchend', () => clearTimeout(longPressTimeout));
-tab.addEventListener('touchmove', () => clearTimeout(longPressTimeout));
-
-tab.oncontextmenu = (e) => {
-  e.preventDefault();
-  showContextMenu(e, cat, tab);
-};
+        tab.oncontextmenu = (e) => {
+          e.preventDefault();
+          showContextMenu(e, cat, tab);
+        };
 
         tabContainer.appendChild(tab); // Append tab to container
       });
@@ -391,116 +381,99 @@ tab.oncontextmenu = (e) => {
           item.appendChild(grabber);
           item.appendChild(label);
           item.appendChild(controls);
-          let snackLongPressTimeout;
-item.addEventListener('touchstart', (e) => {
-  snackLongPressTimeout = setTimeout(() => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    item.dispatchEvent(new MouseEvent('contextmenu', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      pageX: touch.pageX,
-      pageY: touch.pageY
-    }));
-  }, 600);
-});
-item.addEventListener('touchend', () => clearTimeout(snackLongPressTimeout));
-item.addEventListener('touchmove', () => clearTimeout(snackLongPressTimeout));
+          item.oncontextmenu = (e) => {
+            e.preventDefault();
+            const menu = document.getElementById('contextMenu');
+            menu.innerHTML = '';
+            menu.style.top = `${e.pageY}px`;
+            menu.style.left = `${e.pageX}px`;
+            menu.style.display = 'flex';
 
-item.oncontextmenu = (e) => {
-  e.preventDefault();
-  const menu = document.getElementById('contextMenu');
-  menu.innerHTML = '';
-  menu.style.top = `${e.pageY}px`;
-  menu.style.left = `${e.pageX}px`;
-  menu.style.display = 'flex';
+            const renameBtn = document.createElement('button');
+            renameBtn.textContent = 'Rename';
+            renameBtn.onclick = () => {
+              const newName = prompt('Rename snack:', snack.name);
+              if (newName) {
+                snack.name = newName;
+                saveToStorage();
+                renderSnackList(category);
+              }
+              menu.style.display = 'none';
+            };
 
-  const renameBtn = document.createElement('button');
-  renameBtn.textContent = 'Rename';
-  renameBtn.onclick = () => {
-    const newName = prompt('Rename snack:', snack.name);
-    if (newName) {
-      snack.name = newName;
-      saveToStorage();
-      renderSnackList(category);
-    }
-    menu.style.display = 'none';
-  };
+            const colorPicker = document.createElement('div');
+            colorPicker.className = 'color-options';
+            const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
+            colors.forEach(color => {
+              const swatch = document.createElement('div');
+              swatch.className = 'color-swatch';
+              swatch.style.backgroundColor = color;
+              swatch.onclick = () => {
+                snack.color = color;
+                saveToStorage();
+                renderSnackList(category);
+                menu.style.display = 'none';
+              };
+              colorPicker.appendChild(swatch);
+            });
 
-  const colorPicker = document.createElement('div');
-  colorPicker.className = 'color-options';
-  const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
-  colors.forEach(color => {
-    const swatch = document.createElement('div');
-    swatch.className = 'color-swatch';
-    swatch.style.backgroundColor = color;
-    swatch.onclick = () => {
-      snack.color = color;
-      saveToStorage();
-      renderSnackList(category);
-      menu.style.display = 'none';
-    };
-    colorPicker.appendChild(swatch);
-  });
+            const removeFillBtn = document.createElement('button');
+            removeFillBtn.textContent = 'Remove Fill';
+            removeFillBtn.onclick = () => {
+              delete snack.color;
+              saveToStorage();
+              renderSnackList(category);
+              menu.style.display = 'none';
+            };
 
-  const removeFillBtn = document.createElement('button');
-  removeFillBtn.textContent = 'Remove Fill';
-  removeFillBtn.onclick = () => {
-    delete snack.color;
-    saveToStorage();
-    renderSnackList(category);
-    menu.style.display = 'none';
-  };
+            const adjustBtn = document.createElement('button');
+            adjustBtn.textContent = 'Adjust Amount';
+            adjustBtn.onclick = () => {
+              const newVal = prompt('Enter new count for ' + snack.name, snack.count);
+              const valNum = parseInt(newVal);
+              if (!isNaN(valNum)) {
+                snack.count = valNum;
+                saveToStorage();
+                renderSnackList(category);
+              }
+              menu.style.display = 'none';
+            };
 
-  const adjustBtn = document.createElement('button');
-  adjustBtn.textContent = 'Adjust Amount';
-  adjustBtn.onclick = () => {
-    const newVal = prompt('Enter new count for ' + snack.name, snack.count);
-    const valNum = parseInt(newVal);
-    if (!isNaN(valNum)) {
-      snack.count = valNum;
-      saveToStorage();
-      renderSnackList(category);
-    }
-    menu.style.display = 'none';
-  };
+            menu.appendChild(renameBtn);
+            menu.appendChild(colorPicker);
+            menu.appendChild(removeFillBtn);
+            menu.appendChild(adjustBtn);
 
-  menu.appendChild(renameBtn);
-  menu.appendChild(colorPicker);
-  menu.appendChild(removeFillBtn);
-  menu.appendChild(adjustBtn);
+            const addSnackBtn = document.createElement('button');
+            addSnackBtn.textContent = 'Add Snack';
+            addSnackBtn.onclick = () => {
+              const name = prompt('Enter snack name:');
+              if (!name) return;
+              const count = parseInt(prompt('Enter starting count:', '0'));
+              if (isNaN(count)) return;
+              snacks[category].push({ name, count });
+              saveToStorage();
+              renderSnackList(category);
+              menu.style.display = 'none';
+            };
+            menu.appendChild(addSnackBtn);
 
-  const addSnackBtn = document.createElement('button');
-  addSnackBtn.textContent = 'Add Snack';
-  addSnackBtn.onclick = () => {
-    const name = prompt('Enter snack name:');
-    if (!name) return;
-    const count = parseInt(prompt('Enter starting count:', '0'));
-    if (isNaN(count)) return;
-    snacks[category].push({ name, count });
-    saveToStorage();
-    renderSnackList(category);
-    menu.style.display = 'none';
-  };
-  menu.appendChild(addSnackBtn);
+            const deleteSnackBtn = document.createElement('button');
+            deleteSnackBtn.textContent = 'Delete Snack';
+            deleteSnackBtn.onclick = () => {
+              if (confirm(`Delete snack "${snack.name}"?`)) {
+                snacks[category].splice(index, 1);
+                saveToStorage();
+                renderSnackList(category);
+              }
+              menu.style.display = 'none';
+            };
+            menu.appendChild(deleteSnackBtn);
 
-  const deleteSnackBtn = document.createElement('button');
-  deleteSnackBtn.textContent = 'Delete Snack';
-  deleteSnackBtn.onclick = () => {
-    if (confirm(`Delete snack "${snack.name}"?`)) {
-      snacks[category].splice(index, 1);
-      saveToStorage();
-      renderSnackList(category);
-    }
-    menu.style.display = 'none';
-  };
-  menu.appendChild(deleteSnackBtn);
-
-  document.addEventListener('click', () => {
-    menu.style.display = 'none';
-  }, { once: true });
-};
+            document.addEventListener('click', () => {
+              menu.style.display = 'none';
+            }, { once: true });
+          };
 
           if (snack.color) item.style.background = snack.color;
 
