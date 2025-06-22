@@ -553,6 +553,17 @@ function openBarcodeScanner() {
     return;
   }
   Quagga.start();
+
+// Debug: Log scanner container contents
+    setTimeout(() => {
+      console.log('Scanner Div Content:', document.querySelector('#barcodeScanner').innerHTML);
+      const video = document.querySelector('#barcodeScanner video');
+      if (!video) {
+        console.warn('Video element not found in scanner div.');
+      } else {
+        console.log('Video element found and should be displaying.');
+      }
+    }, 1000);
 });
 
   Quagga.onDetected(data => {
