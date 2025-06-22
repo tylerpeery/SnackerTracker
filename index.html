@@ -152,9 +152,15 @@
     .label.neutral {
       color: gray;
     }
+    #pickerResult {
+      margin-top: 1rem;
+      font-weight: bold;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
+<audio id="spinSound" src="assets/sounds/wheel-spin.mp3" preload="auto"></audio>
 <header>
     <span style="font-size: 1.5rem">🍿</span>
     <h1 style="margin: 0">SnackerTracker</h1>
@@ -335,7 +341,7 @@
     document.getElementById('snackModal').style.display = 'none';
   }
   
-  function drawWheel(snackOptions, selectedIndex) {
+  function drawWheel(snackOptions, rotationAngle = 0) {
     const canvas = document.getElementById('pickerCanvas');
     const ctx = canvas.getContext('2d');
     const radius = canvas.width / 2;
@@ -345,14 +351,16 @@
     const anglePerSlice = 2 * Math.PI / total;
   
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(rotationAngle);
     for (let i = 0; i < total; i++) {
       ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.fillStyle = i === selectedIndex ? '#f4c542' : `hsl(${i * 360 / total}, 70%, 70%)`;
-      ctx.arc(centerX, centerY, radius, i * anglePerSlice, (i + 1) * anglePerSlice);
+      ctx.moveTo(0, 0);
+      ctx.fillStyle = `hsl(${i * 360 / total}, 70%, 70%)`;
+      ctx.arc(0, 0, radius, i * anglePerSlice, (i + 1) * anglePerSlice);
       ctx.fill();
       ctx.save();
-      ctx.translate(centerX, centerY);
       ctx.rotate(i * anglePerSlice + anglePerSlice / 2);
       ctx.textAlign = 'right';
       ctx.fillStyle = '#333';
@@ -360,6 +368,15 @@
       ctx.fillText(snackOptions[i].emoji + ' ' + snackOptions[i].name, radius - 10, 0);
       ctx.restore();
     }
+    ctx.restore();
+    // Draw pointer
+    ctx.fillStyle = '#333';
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY - radius - 10);
+    ctx.lineTo(centerX - 10, centerY - radius - 30);
+    ctx.lineTo(centerX + 10, centerY - radius - 30);
+    ctx.closePath();
+    ctx.fill();
   }
   
   function selectRandomSnack() {
@@ -376,18 +393,27 @@
     const deceleration = 0.005;
     const selectedIndex = Math.floor(Math.random() * options.length);
   
+    document.getElementById('spinSound').play(); // ▶️ Play sound when spinning starts
+
     function animate() {
-      angle += speed;
-      speed *= 0.98;
-      if (speed < deceleration) {
-        drawWheel(options, selectedIndex);
-        pickerResult.textContent = `How about: ${options[selectedIndex].emoji || ''} ${options[selectedIndex].name}?`;
-        return;
-      }
-      drawWheel(options);
-      requestAnimationFrame(animate);
-    }
-  
+	  angle += speed;
+	  speed *= 0.98;
+
+	  drawWheel(options, angle); // Use live angle
+
+	  if (speed < deceleration) {
+		// Determine final index based on angle
+		const sliceAngle = (2 * Math.PI) / options.length;
+		const normalizedAngle = angle % (2 * Math.PI);
+		const finalIndex = options.length - Math.floor(normalizedAngle / sliceAngle) - 1;
+
+		pickerResult.textContent = `How about: ${options[finalIndex].emoji || ''} ${options[finalIndex].name}?`;
+		return;
+	  }
+
+	  requestAnimationFrame(animate);
+	}
+
     animate();
   }
   
