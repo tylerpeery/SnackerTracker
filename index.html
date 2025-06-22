@@ -517,8 +517,15 @@ function openBarcodeScanner() {
   scannerDiv.style.position = 'relative';
   scannerDiv.style.overflow = 'hidden';
   scannerDiv.style.backgroundColor = '#000'; // fallback
-
   modalContent.appendChild(scannerDiv);
+
+  // 👇 Add this to prompt camera permission
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => stream.getTracks().forEach(track => track.stop()))
+    .catch(err => {
+      console.error("Camera permission denied:", err);
+      alert("Camera access is needed to scan.");
+    });
 
   Quagga.init({
     inputStream: {
