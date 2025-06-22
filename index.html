@@ -153,8 +153,10 @@
     <span style="font-size: 1.5rem">🍿</span>
     <h1 style="margin: 0">SnackerTracker</h1>
 </header>
-<div class="search-bar">
-  <input type="text" placeholder="Search snacks..." />
+<div class="search-bar" style="text-align: center;">
+  <button onclick="openSnackPicker()" style="padding: 1rem 2rem; font-size: 1.2rem; background-color: green; color: white; border: none; border-radius: 10px; cursor: pointer;">
+    🎯 I want a snack!
+  </button>
 </div>
 <div class="tabs">
   <div class="tab active" onclick="showTab('healthy')">🥬 Healthy Choices</div>
@@ -227,7 +229,7 @@
       `;
       containers[snack.category].appendChild(card);
     });
-    
+
     localStorage.setItem('snacks', JSON.stringify(snacks));
   };
 
@@ -250,7 +252,7 @@
     document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
     document.getElementById(tabId).classList.add('active');
   }
-  
+
   function openAddSnackModal(index = null) {
     editingIndex = index;
     document.getElementById('snackModal').style.display = 'flex';
@@ -285,7 +287,6 @@
       document.getElementById('deleteSnackBtn').onclick = null;
     }
 
-    // Focus appropriate field
     setTimeout(() => {
       if (index === null) {
         document.getElementById('snackName').focus();
@@ -295,7 +296,7 @@
     }, 50);
   }
 
-    function closeModalOnOutsideClick(event) {
+  function closeModalOnOutsideClick(event) {
     if (event.target.id === 'snackModal') {
       document.getElementById('snackModal').style.display = 'none';
       editingIndex = null;
@@ -305,7 +306,7 @@
   function saveSnack() {
     const name = document.getElementById('snackName').value;
     const emojiInput = document.getElementById('snackEmoji').value;
-    const emoji = emojiInput.trim() === '' ? '' : emojiInput; // non-breaking space if empty    
+    const emoji = emojiInput.trim() === '' ? '' : emojiInput;
     const amount = document.getElementById('snackAmount').value;
     const container = document.getElementById('snackContainer').value;
     const category = document.getElementById('snackCategory').value;
@@ -326,6 +327,43 @@
 
     renderSnacks();
     document.getElementById('snackModal').style.display = 'none';
+  }
+
+  function openSnackPicker() {
+    const pickerModal = document.createElement('div');
+    pickerModal.className = 'modal';
+    pickerModal.id = 'pickerModal';
+    pickerModal.style.display = 'flex';
+    pickerModal.innerHTML = `
+      <div class="modal-content">
+        <h2>Pick a Category</h2>
+        <select id="pickerCategory">
+          <option value="healthy">Healthy Choices</option>
+          <option value="treats">Treats</option>
+          <option value="drinks">Drinks</option>
+          <option value="pantry">Pantry</option>
+        </select>
+        <button onclick="selectRandomSnack()">Spin the Wheel!</button>
+        <div id="pickerResult" style="margin-top: 1rem; font-weight: bold;"></div>
+      </div>
+    `;
+    document.body.appendChild(pickerModal);
+    pickerModal.onclick = function(e) {
+      if (e.target.id === 'pickerModal') pickerModal.remove();
+    };
+  }
+
+  function selectRandomSnack() {
+    const category = document.getElementById('pickerCategory').value;
+    const options = snacks.filter(s => s.category === category);
+    const pickerModal = document.getElementById('pickerModal');
+    const pickerResult = document.getElementById('pickerResult');
+    if (options.length === 0) {
+      pickerResult.textContent = "No snacks in that category!";
+      return;
+    }
+    const randomSnack = options[Math.floor(Math.random() * options.length)];
+    pickerResult.textContent = `How about: ${randomSnack.emoji || ''} ${randomSnack.name}?`;
   }
 
   renderSnacks();
