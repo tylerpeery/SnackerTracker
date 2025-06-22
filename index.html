@@ -528,25 +528,32 @@ function openBarcodeScanner() {
     });
 
   Quagga.init({
-    inputStream: {
-      type: 'LiveStream',
-      target: scannerDiv,
-      constraints: {
-        facingMode: 'environment',
-	width: { ideal: 640 },
-  	height: { ideal: 480 }
-      }
+  inputStream: {
+    type: 'LiveStream',
+    target: scannerDiv,
+    constraints: {
+      facingMode: 'environment',
+      width: { ideal: 640 },
+      height: { ideal: 480 }
     },
-    decoder: {
-      readers: ['ean_reader', 'upc_reader', 'upc_e_reader']
+    area: { // optional but helps define scan region
+      top: '0%',    // top offset
+      right: '0%',  // right offset
+      left: '0%',   // left offset
+      bottom: '0%'  // bottom offset
     }
-  }, function (err) {
-    if (err) {
-      console.error(err);
-      return;
-    }
-    Quagga.start();
-  });
+  },
+  decoder: {
+    readers: ['ean_reader', 'upc_reader', 'upc_e_reader']
+  },
+  locate: true // 👈 enables detection engine
+}, function (err) {
+  if (err) {
+    console.error(err);
+    return;
+  }
+  Quagga.start();
+});
 
   Quagga.onDetected(data => {
     const code = data.codeResult.code;
