@@ -505,6 +505,7 @@ function openBarcodeScanner() {
   scannerDiv.style.width = '100%';
   scannerDiv.style.height = '200px';
   scannerDiv.style.marginTop = '1rem';
+  scannerDiv.style.border = '2px solid red';
   modalContent.appendChild(scannerDiv);
 
   Quagga.init({
@@ -512,7 +513,9 @@ function openBarcodeScanner() {
       type: 'LiveStream',
       target: scannerDiv,
       constraints: {
-        facingMode: 'environment'
+        facingMode: 'environment',
+	width: { ideal: 640 },
+  	height: { ideal: 480 }
       }
     },
     decoder: {
