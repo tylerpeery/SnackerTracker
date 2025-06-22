@@ -476,6 +476,91 @@
 	  };
 	}
 
+// Set initial angle to a random value between 0 and 2π radians
+let angle = Math.random() * 2 * Math.PI;
+
+// Barcode scanner integration using QuaggaJS (example for mobile camera access)
+function addBarcodeButtonToModal() {
+  const modalContent = document.querySelector('#snackModal .modal-content');
+  if (!modalContent) return;
+
+  // Avoid adding multiple times
+  if (document.getElementById('barcodeScanBtn')) return;
+
+  const barcodeButton = document.createElement('button');
+  barcodeButton.id = 'barcodeScanBtn';
+  barcodeButton.textContent = '📷 Scan Barcode Instead';
+  barcodeButton.style.marginTop = '0.5rem';
+  barcodeButton.onclick = openBarcodeScanner;
+
+  modalContent.appendChild(barcodeButton);
+}
+
+function openBarcodeScanner() {
+  const modalContent = document.querySelector('#snackModal .modal-content');
+  const scannerDiv = document.createElement('div');
+  scannerDiv.id = 'barcodeScanner';
+  scannerDiv.style.width = '100%';
+  scannerDiv.style.height = '200px';
+  scannerDiv.style.marginTop = '1rem';
+  modalContent.appendChild(scannerDiv);
+
+  Quagga.init({
+    inputStream: {
+      type: 'LiveStream',
+      target: scannerDiv,
+      constraints: {
+        facingMode: 'environment'
+      }
+    },
+    decoder: {
+      readers: ['ean_reader', 'upc_reader', 'upc_e_reader']
+    }
+  }, function (err) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    Quagga.start();
+  });
+
+  Quagga.onDetected(data => {
+    const code = data.codeResult.code;
+    console.log('Barcode:', code);
+    Quagga.stop();
+    document.getElementById('barcodeScanner').remove();
+    fetchFromOpenFoodFacts(code);
+  });
+}
+
+function fetchFromOpenFoodFacts(barcode) {
+  const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 1) {
+        const product = data.product;
+        document.getElementById('snackName').value = product.product_name || '';
+        document.getElementById('snackEmoji').value = '🍽️';
+        const nutri = product.nutriscore_grade || 'neutral';
+        document.getElementById('snackLabel').value = mapNutriToLabel(nutri);
+      } else {
+        alert('Product not found. Try again.');
+      }
+    })
+    .catch(() => alert('Error fetching data from Open Food Facts.'));
+}
+
+function mapNutriToLabel(nutri) {
+  if (nutri === 'a' || nutri === 'b') return 'healthy';
+  if (nutri === 'd' || nutri === 'e') return 'unhealthy';
+  return 'neutral';
+}
+
+// Attach scanner button on load
+window.addEventListener('DOMContentLoaded', addBarcodeButtonToModal);
+
+
   renderSnacks();
 
 </script>
