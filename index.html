@@ -516,7 +516,7 @@ function openBarcodeScanner() {
   scannerDiv.style.border = '4px dashed red';
   scannerDiv.style.position = 'relative';
   scannerDiv.style.overflow = 'hidden';
-  scannerDiv.style.backgroundColor = '#000'; // fallback
+  scannerDiv.style.backgroundColor = 'rgba(0,0,0,0.1)'; // fallback
   modalContent.appendChild(scannerDiv);
 
   // 👇 Add this to prompt camera permission
