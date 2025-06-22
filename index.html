@@ -180,6 +180,14 @@
 	  .wiggle {
 		animation: pointerWiggle 0.6s ease;
 	  }
+	#barcodeScanner video {
+	  position: absolute !important;
+	  top: 0;
+	  left: 0;
+	  object-fit: cover;
+	  width: 100% !important;
+	  height: 100% !important;
+	}
   </style>
 </head>
 <body>
@@ -503,9 +511,13 @@ function openBarcodeScanner() {
   const scannerDiv = document.createElement('div');
   scannerDiv.id = 'barcodeScanner';
   scannerDiv.style.width = '100%';
-  scannerDiv.style.height = '200px';
+  scannerDiv.style.height = '300px';
   scannerDiv.style.marginTop = '1rem';
-  scannerDiv.style.border = '2px solid red';
+  scannerDiv.style.border = '4px dashed red';
+  scannerDiv.style.position = 'relative';
+  scannerDiv.style.overflow = 'hidden';
+  scannerDiv.style.backgroundColor = '#000'; // fallback
+
   modalContent.appendChild(scannerDiv);
 
   Quagga.init({
