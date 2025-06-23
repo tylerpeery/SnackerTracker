@@ -349,7 +349,7 @@
     const today = new Date();
     const date = `${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}`;
 
-    if (!name || !amount) return;
+    if (!name) return;
 
     const snackData = { name, emoji, amount, container, category, label, date };
 
