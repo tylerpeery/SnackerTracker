@@ -412,24 +412,30 @@
   }
   
   function selectRandomSnack() {
-	  const category = document.getElementById('pickerCategory').value;
-	  const options = snacks.filter(s => s.category === category);
-	  const pickerResult = document.getElementById('pickerResult');
-	  const pointer = document.getElementById('wheelPointer');
+	const category = document.getElementById('pickerCategory').value;
+	let options = [];
 
-	  if (options.length === 0) {
-		pickerResult.textContent = 'No snacks in that category!';
-		return;
-	  }
+	if (category === 'all') {
+	  options = snacks.filter(s => s.category !== 'drinks'); // Optional: Exclude drinks if desired
+	} else {
+	  options = snacks.filter(s => s.category === category);
+	}
+	const pickerResult = document.getElementById('pickerResult');
+	const pointer = document.getElementById('wheelPointer');
 
-	  pointer.style.display = 'block'; // Show pointer only when spin begins
-	  const canvas = document.getElementById('pickerCanvas');
-	  let angle = Math.random() * 2 * Math.PI;
-	  let speed = Math.random() * 0.2 + 0.2;
-	  const deceleration = 0.005;
+	if (options.length === 0) {
+	  pickerResult.textContent = 'No snacks in that category!';
+	return;
+	}
 
-	  document.getElementById('spinSound').play();
-	  animatePointer();
+	pointer.style.display = 'block'; // Show pointer only when spin begins
+	const canvas = document.getElementById('pickerCanvas');
+	let angle = Math.random() * 2 * Math.PI;
+	let speed = Math.random() * 0.2 + 0.2;
+	const deceleration = 0.005;
+
+	document.getElementById('spinSound').play();
+	animatePointer();
 
 	  function animate() {
 		angle += speed;
@@ -461,6 +467,7 @@
 			<option value="pantry">🥔 Pantry</option>
 			<option value="drinks">🥤 Drinks</option>
 			<option value="treats">🍪 Treats</option>
+			<option value="all">All Foods</option>
 		  </select>
 		  <div style="position: relative; display: flex; justify-content: center; align-items: center;">
 			<div class="wheelPointer" id="wheelPointer"></div>
