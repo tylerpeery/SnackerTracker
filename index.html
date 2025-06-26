@@ -195,9 +195,9 @@
 <div class="pointer" id="pointer"></div>
 <div class="tabs">
   <div class="tab active" onclick="showTab('healthy')">🥬 Healthy Choices</div>
-  <div class="tab" onclick="showTab('treats')">🍪 Treats</div>
-  <div class="tab" onclick="showTab('drinks')">🥤 Drinks</div>
   <div class="tab" onclick="showTab('pantry')">🥔 Pantry Stash</div>
+  <div class="tab" onclick="showTab('drinks')">🥤 Drinks</div>
+  <div class="tab" onclick="showTab('treats')">🍪 Treats</div>
 </div>
 <div class="content">
   <div id="healthy" class="snack-list active"></div>
@@ -215,10 +215,10 @@
     <input type="text" id="snackAmount" placeholder="Amount Remaining (7, 1/2)" />
     <input type="text" id="snackContainer" placeholder="Container Type (packs, gallon, bag)" />
     <select id="snackCategory">
-      <option value="healthy">Healthy Choices</option>
-      <option value="treats">Treats</option>
-      <option value="drinks">Drinks</option>
-      <option value="pantry">Pantry</option>
+      <option value="healthy">🥬 Healthy Choices</option>
+      <option value="pantry">🥔 Pantry</option>
+      <option value="drinks">🥤 Drinks</option>
+	  <option value="treats">🍪 Treats</option>
     </select>
     <select id="snackLabel">
       <option value="healthy">✔️ Healthy</option>
@@ -349,7 +349,7 @@
     const today = new Date();
     const date = `${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}`;
 
-    if (!name || !amount) return;
+    if (!name) return;
 
     const snackData = { name, emoji, amount, container, category, label, date };
 
@@ -412,24 +412,30 @@
   }
   
   function selectRandomSnack() {
-	  const category = document.getElementById('pickerCategory').value;
-	  const options = snacks.filter(s => s.category === category);
-	  const pickerResult = document.getElementById('pickerResult');
-	  const pointer = document.getElementById('wheelPointer');
+	const category = document.getElementById('pickerCategory').value;
+	let options = [];
 
-	  if (options.length === 0) {
-		pickerResult.textContent = 'No snacks in that category!';
-		return;
-	  }
+	if (category === 'all') {
+	  options = snacks.filter(s => s.category !== 'drinks'); // Optional: Exclude drinks if desired
+	} else {
+	  options = snacks.filter(s => s.category === category);
+	}
+	const pickerResult = document.getElementById('pickerResult');
+	const pointer = document.getElementById('wheelPointer');
 
-	  pointer.style.display = 'block'; // Show pointer only when spin begins
-	  const canvas = document.getElementById('pickerCanvas');
-	  let angle = Math.random() * 2 * Math.PI;
-	  let speed = Math.random() * 0.2 + 0.2;
-	  const deceleration = 0.005;
+	if (options.length === 0) {
+	  pickerResult.textContent = 'No snacks in that category!';
+	return;
+	}
 
-	  document.getElementById('spinSound').play();
-	  animatePointer();
+	pointer.style.display = 'block'; // Show pointer only when spin begins
+	const canvas = document.getElementById('pickerCanvas');
+	let angle = Math.random() * 2 * Math.PI;
+	let speed = Math.random() * 0.2 + 0.2;
+	const deceleration = 0.005;
+
+	document.getElementById('spinSound').play();
+	animatePointer();
 
 	  function animate() {
 		angle += speed;
@@ -457,10 +463,11 @@
 		<div class="modal-content" style="position: relative;">
 		  <h2>Pick a Category</h2>
 		  <select id="pickerCategory">
-			<option value="healthy">Healthy Choices</option>
-			<option value="treats">Treats</option>
-			<option value="drinks">Drinks</option>
-			<option value="pantry">Pantry</option>
+			<option value="healthy">🥬 Healthy Choices</option>
+			<option value="pantry">🥔 Pantry</option>
+			<option value="drinks">🥤 Drinks</option>
+			<option value="treats">🍪 Treats</option>
+			<option value="all">All Foods</option>
 		  </select>
 		  <div style="position: relative; display: flex; justify-content: center; align-items: center;">
 			<div class="wheelPointer" id="wheelPointer"></div>
@@ -475,6 +482,44 @@
 		if (e.target.id === 'pickerModal') pickerModal.remove();
 	  };
 	}
+	
+	function fetchNutriScoreFromOpenFoodFacts(snackName) {
+	  const query = encodeURIComponent(snackName);
+	  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${query}&search_simple=1&action=process&json=1&page_size=1`;
+
+	  fetch(url)
+		.then(res => res.json())
+		.then(data => {
+		  if (data.products && data.products.length > 0) {
+			const nutri = data.products[0].nutriscore_grade || 'neutral';
+			const label = mapNutriToLabel(nutri);
+			document.getElementById('snackLabel').value = label;
+		  } else {
+			console.log('No product match found for Nutri-Score.');
+		  }
+		})
+		.catch(err => console.error('Error fetching from OFF:', err));
+	}
+
+	function mapNutriToLabel(nutri) {
+	  if (nutri === 'a' || nutri === 'b') return 'healthy';
+	  if (nutri === 'd' || nutri === 'e') return 'unhealthy';
+	  return 'neutral';
+	}
+
+	function attachNutriScoreAutoLookup() {
+	  const nameInput = document.getElementById('snackName');
+	  nameInput.addEventListener('blur', () => {
+		const name = nameInput.value.trim();
+		if (name) {
+		  fetchNutriScoreFromOpenFoodFacts(name);
+		}
+	  });
+	}
+
+	window.addEventListener('DOMContentLoaded', () => {
+	  attachNutriScoreAutoLookup();
+	});
 
   renderSnacks();
 
